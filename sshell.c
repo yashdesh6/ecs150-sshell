@@ -350,7 +350,7 @@ int execute_builtin(Command *cmd, const char *cmdline)
             return 1;
         }
         
-        fprintf(stderr, "bBye...\n");
+        fprintf(stderr, "Bye...\n");
         fprintf(stderr, "+ completed 'exit' [0]\n");
         exit(EXIT_SUCCESS);
     }
