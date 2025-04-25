@@ -243,8 +243,10 @@ void parse_command_line(char *cmdline, Job *job)
                 free(cmd_copy);
                 return;
             }
+
             job->commands[cmd_index].argv[arg_index] = NULL;
             job->commands[cmd_index].argc = arg_index;
+
             parsing_input = 1;
         }
         else if (strcmp(token, "&") == 0) {
