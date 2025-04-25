@@ -5,6 +5,7 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <limits.h>
 
 #define CMDLINE_MAX 512
 #define ARGUMENT_MAX 16
@@ -44,6 +45,10 @@ int main(void)
     if (getcwd(cwd, sizeof(cwd)) == NULL) {
         perror("getcwd");
         exit(EXIT_FAILURE);
+    }
+
+    if (getenv("PATH") == NULL) {
+        setenv("PATH", "/bin:/usr/bin", 1);
     }
 
     memset(&bg_job, 0, sizeof(bg_job));
@@ -176,6 +181,15 @@ void parse_command_line(char *cmdline, Job *job)
     if (cmd_copy == NULL) {
         perror("strdup");
         exit(EXIT_FAILURE);
+    }
+
+    size_t len = strlen(cmd_copy);
+    if (len > 0 && cmd_copy[len-1] == '&') {
+        job->background = 1;
+        cmd_copy[len-1] = '\0';
+        if (len > 1 && cmd_copy[len-2] == ' ') {
+            cmd_copy[len-2] = '\0';
+        }
     }
 
     token = strtok(cmd_copy, " \t");
@@ -355,7 +369,13 @@ int execute_builtin(Command *cmd, const char *cmdline)
         exit(EXIT_SUCCESS);
     }
     else if (strcmp(cmd->argv[0], "cd") == 0) {
-        if (chdir(cmd->argv[1]) != 0) {
+        const char *dir = cmd->argc > 1 ? cmd->argv[1] : getenv("HOME");
+        if (dir == NULL) {
+            fprintf(stderr, "Error: HOME environment variable not set\n");
+            fprintf(stderr, "+ completed 'cd' [1]\n");
+            return 1;
+        }
+        if (chdir(dir) != 0) {
             fprintf(stderr, "Error: cannot cd into directory\n");
             fprintf(stderr, "+ completed '%s' [1]\n", cmdline);
             return 1;
@@ -454,7 +474,7 @@ int execute_job(Job *job)
             execvp(cmd->argv[0], cmd->argv);
             
             fprintf(stderr, "Error: command not found\n");
-            exit(EXIT_FAILURE);
+            exit(127);
         } else {
             job->pids[i] = pid;
         }
