@@ -56,10 +56,10 @@ int main(void)
 
         if (!fgets(cmdline, CMDLINE_MAX, stdin)) {
             if (feof(stdin)) {
-                fprintf(stderr, "error: end of file\n");
+                fprintf(stderr, "Error: end of file\n");
                 exit(EXIT_SUCCESS);
             } else {
-                fprintf(stderr, "error: failed to read command\n");
+                fprintf(stderr, "Error: failed to read command\n");
                 exit(EXIT_FAILURE);
             }
         }
@@ -182,7 +182,7 @@ void parse_command_line(char *cmdline, Job *job)
     while (token != NULL && cmd_index < MAX_COMMANDS) {
         if (strcmp(token, "|") == 0) {
             if (arg_index == 0) {
-                fprintf(stderr, "error: missing command\n");
+                fprintf(stderr, "Error: missing command\n");
                 job->command_count = 0;
                 free_job(job);
                 free(cmd_copy);
@@ -190,7 +190,7 @@ void parse_command_line(char *cmdline, Job *job)
             }
 
             if (job->commands[cmd_index].output_file != NULL) {
-                fprintf(stderr, "error: mislocated output redirection\n");
+                fprintf(stderr, "Error: mislocated output redirection\n");
                 job->command_count = 0;
                 free_job(job);
                 free(cmd_copy);
@@ -198,7 +198,7 @@ void parse_command_line(char *cmdline, Job *job)
             }
 
             if (cmd_index > 0 && job->commands[cmd_index].input_file != NULL) {
-                fprintf(stderr, "error: mislocated input redirection\n");
+                fprintf(stderr, "Error: mislocated input redirection\n");
                 job->command_count = 0;
                 free_job(job);
                 free(cmd_copy);
@@ -215,7 +215,7 @@ void parse_command_line(char *cmdline, Job *job)
         }
         else if (strcmp(token, ">") == 0) {
             if (arg_index == 0) {
-                fprintf(stderr, "error: missing command\n");
+                fprintf(stderr, "Error: missing command\n");
                 job->command_count = 0;
                 free_job(job);
                 free(cmd_copy);
@@ -229,7 +229,7 @@ void parse_command_line(char *cmdline, Job *job)
         }
         else if (strcmp(token, "<") == 0) {
             if (arg_index == 0) {
-                fprintf(stderr, "error: missing command\n");
+                fprintf(stderr, "Error: missing command\n");
                 job->command_count = 0;
                 free_job(job);
                 free(cmd_copy);
@@ -237,7 +237,7 @@ void parse_command_line(char *cmdline, Job *job)
             }
 
             if (cmd_index > 0) {
-                fprintf(stderr, "error: mislocated input redirection\n");
+                fprintf(stderr, "Error: mislocated input redirection\n");
                 job->command_count = 0;
                 free_job(job);
                 free(cmd_copy);
@@ -252,7 +252,7 @@ void parse_command_line(char *cmdline, Job *job)
         else if (strcmp(token, "&") == 0) {
             char *next_token = strtok(NULL, " \t");
             if (next_token != NULL) {
-                fprintf(stderr, "error: mislocated background sign\n");
+                fprintf(stderr, "Error: mislocated background sign\n");
                 job->command_count = 0;
                 free_job(job);
                 free(cmd_copy);
@@ -270,7 +270,7 @@ void parse_command_line(char *cmdline, Job *job)
             
             int fd = open(token, O_WRONLY | O_CREAT | O_TRUNC, 0644);
             if (fd == -1) {
-                fprintf(stderr, "error: cannot open output file\n");
+                fprintf(stderr, "Error: cannot open output file\n");
                 job->command_count = 0;
                 free_job(job);
                 free(cmd_copy);
@@ -284,7 +284,7 @@ void parse_command_line(char *cmdline, Job *job)
             
             int fd = open(token, O_RDONLY);
             if (fd == -1) {
-                fprintf(stderr, "error: cannot open input file\n");
+                fprintf(stderr, "Error: cannot open input file\n");
                 job->command_count = 0;
                 free_job(job);
                 free(cmd_copy);
@@ -294,7 +294,7 @@ void parse_command_line(char *cmdline, Job *job)
         }
         else {
             if (arg_index >= ARGUMENT_MAX) {
-                fprintf(stderr, "error: too many process arguments\n");
+                fprintf(stderr, "Error: too many process arguments\n");
                 job->command_count = 0;
                 free_job(job);
                 free(cmd_copy);
@@ -309,7 +309,7 @@ void parse_command_line(char *cmdline, Job *job)
     }
 
     if (parsing_output) {
-        fprintf(stderr, "error: no output file\n");
+        fprintf(stderr, "Error: no output file\n");
         job->command_count = 0;
         free_job(job);
         free(cmd_copy);
@@ -317,7 +317,7 @@ void parse_command_line(char *cmdline, Job *job)
     }
 
     if (parsing_input) {
-        fprintf(stderr, "error: no input file\n");
+        fprintf(stderr, "Error: no input file\n");
         job->command_count = 0;
         free_job(job);
         free(cmd_copy);
@@ -325,7 +325,7 @@ void parse_command_line(char *cmdline, Job *job)
     }
 
     if (arg_index == 0 && cmd_index > 0) {
-        fprintf(stderr, "error: missing command\n");
+        fprintf(stderr, "Error: missing command\n");
         job->command_count = 0;
         free_job(job);
         free(cmd_copy);
@@ -345,18 +345,18 @@ int execute_builtin(Command *cmd, const char *cmdline)
 {
     if (strcmp(cmd->argv[0], "exit") == 0) {
         if (have_bg_job) {
-            fprintf(stderr, "error: active job still running\n");
+            fprintf(stderr, "Error: active job still running\n");
             fprintf(stderr, "+ completed 'exit' [1]\n");
             return 1;
         }
         
-        fprintf(stderr, "bye...\n");
+        fprintf(stderr, "bBye...\n");
         fprintf(stderr, "+ completed 'exit' [0]\n");
         exit(EXIT_SUCCESS);
     }
     else if (strcmp(cmd->argv[0], "cd") == 0) {
         if (chdir(cmd->argv[1]) != 0) {
-            fprintf(stderr, "error: cannot cd into directory\n");
+            fprintf(stderr, "Error: cannot cd into directory\n");
             fprintf(stderr, "+ completed '%s' [1]\n", cmdline);
             return 1;
         }
@@ -428,7 +428,7 @@ int execute_job(Job *job)
             if (cmd->input_file != NULL) {
                 int fd = open(cmd->input_file, O_RDONLY);
                 if (fd == -1) {
-                    fprintf(stderr, "error: cannot open input file\n");
+                    fprintf(stderr, "Error: cannot open input file\n");
                     exit(EXIT_FAILURE);
                 }
                 if (dup2(fd, STDIN_FILENO) == -1) {
@@ -441,7 +441,7 @@ int execute_job(Job *job)
             if (cmd->output_file != NULL) {
                 int fd = open(cmd->output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
                 if (fd == -1) {
-                    fprintf(stderr, "error: cannot open output file\n");
+                    fprintf(stderr, "Error: cannot open output file\n");
                     exit(EXIT_FAILURE);
                 }
                 if (dup2(fd, STDOUT_FILENO) == -1) {
@@ -453,7 +453,7 @@ int execute_job(Job *job)
 
             execvp(cmd->argv[0], cmd->argv);
             
-            fprintf(stderr, "error: command not found\n");
+            fprintf(stderr, "Error: command not found\n");
             exit(EXIT_FAILURE);
         } else {
             job->pids[i] = pid;
