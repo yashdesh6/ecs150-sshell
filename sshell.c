@@ -69,6 +69,11 @@ int main(void)
             }
         }
 
+        if (!isatty(STDIN_FILENO)) {
+            printf("%s", cmdline);
+            fflush(stdout);
+        }
+
         size_t len = strlen(cmdline);
         if (len > 0 && cmdline[len - 1] == '\n') {
             cmdline[len - 1] = '\0';
@@ -77,6 +82,9 @@ int main(void)
         if (strlen(cmdline) == 0) {
             continue;
         }
+
+        char original_cmd[CMDLINE_MAX];
+        strncpy(original_cmd, cmdline, CMDLINE_MAX);
 
         Job job;
         memset(&job, 0, sizeof(job));
@@ -121,8 +129,14 @@ void check_background_job(void)
                     if (WIFEXITED(status)) {
                         statuses[i] = WEXITSTATUS(status);
                     } else {
-                        statuses[i] = 1; 
+                        statuses[i] = 1;
                     }
+                } else {
+                    if (errno != ECHILD) {
+                        perror("waitpid");
+                    }
+                    bg_job.pids[i] = -1;
+                    statuses[i] = 1;
                 }
             }
         }
@@ -133,6 +147,7 @@ void check_background_job(void)
                 fprintf(stderr, "[%d]", statuses[i]);
             }
             fprintf(stderr, "\n");
+            fflush(stderr);
 
             free_job(&bg_job);
             have_bg_job = 0;
@@ -187,8 +202,10 @@ void parse_command_line(char *cmdline, Job *job)
     if (len > 0 && cmd_copy[len-1] == '&') {
         job->background = 1;
         cmd_copy[len-1] = '\0';
-        if (len > 1 && cmd_copy[len-2] == ' ') {
-            cmd_copy[len-2] = '\0';
+        
+        len = strlen(cmd_copy);
+        while (len > 0 && (cmd_copy[len-1] == ' ' || cmd_copy[len-1] == '\t')) {
+            cmd_copy[--len] = '\0';
         }
     }
 
@@ -389,6 +406,7 @@ int execute_builtin(Command *cmd, const char *cmdline)
     }
     else if (strcmp(cmd->argv[0], "pwd") == 0) {
         printf("%s\n", cwd);
+        fflush(stdout);
         fprintf(stderr, "+ completed '%s' [0]\n", cmdline);
         return 0;
     }
@@ -426,25 +444,6 @@ int execute_job(Job *job)
         }
 
         if (pid == 0) {
-            if (i > 0) {
-                if (dup2(pipefd[i-1][0], STDIN_FILENO) == -1) {
-                    perror("dup2");
-                    exit(EXIT_FAILURE);
-                }
-            }
-            
-            if (i < job->command_count - 1) {
-                if (dup2(pipefd[i][1], STDOUT_FILENO) == -1) {
-                    perror("dup2");
-                    exit(EXIT_FAILURE);
-                }
-            }
-
-            for (int j = 0; j < job->command_count - 1; j++) {
-                close(pipefd[j][0]);
-                close(pipefd[j][1]);
-            }
-
             if (cmd->input_file != NULL) {
                 int fd = open(cmd->input_file, O_RDONLY);
                 if (fd == -1) {
@@ -456,6 +455,12 @@ int execute_job(Job *job)
                     exit(EXIT_FAILURE);
                 }
                 close(fd);
+            } 
+            else if (i > 0) {
+                if (dup2(pipefd[i-1][0], STDIN_FILENO) == -1) {
+                    perror("dup2");
+                    exit(EXIT_FAILURE);
+                }
             }
 
             if (cmd->output_file != NULL) {
@@ -469,12 +474,23 @@ int execute_job(Job *job)
                     exit(EXIT_FAILURE);
                 }
                 close(fd);
+            } 
+            else if (i < job->command_count - 1) {
+                if (dup2(pipefd[i][1], STDOUT_FILENO) == -1) {
+                    perror("dup2");
+                    exit(EXIT_FAILURE);
+                }
+            }
+
+            for (int j = 0; j < job->command_count - 1; j++) {
+                close(pipefd[j][0]);
+                close(pipefd[j][1]);
             }
 
             execvp(cmd->argv[0], cmd->argv);
             
             fprintf(stderr, "Error: command not found\n");
-            exit(127);
+            exit(127); 
         } else {
             job->pids[i] = pid;
         }
