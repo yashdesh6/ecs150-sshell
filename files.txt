@@ -1,0 +1,12 @@
+total 1888
+drwxr-xr-x  11 yash  staff     352 Apr 24 21:47 .
+drwxr-xr-x@  5 yash  staff     160 Apr 24 21:31 ..
+-rw-r--r--   1 yash  staff     291 Apr 24 21:42 Makefile
+-rw-r--r--   1 yash  staff    1674 Apr 24 21:44 README.md
+-rw-r--r--   1 yash  staff       0 Apr 24 21:47 files.txt
+-rw-r--r--   1 yash  staff       5 Apr 24 21:47 out.txt
+-rw-r--r--   1 yash  staff  608697 Apr 24 21:31 project1.2.pdf
+-rw-r--r--   1 yash  staff  275571 Apr 24 21:31 project_1.2(1).html
+-rwxr-xr-x   1 yash  staff   35144 Apr 24 21:46 sshell
+-rw-r--r--   1 yash  staff   13694 Apr 24 21:44 sshell.c
+-rw-r--r--   1 yash  staff   11576 Apr 24 21:46 sshell.o
