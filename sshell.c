@@ -211,6 +211,15 @@ void parse_command_line(char *cmdline, Job *job)
         }
     }
 
+    len = strlen(cmd_copy);
+    if (len > 1) {
+        char *last_amp = strrchr(cmd_copy, '&');
+        if (last_amp && *(last_amp+1) == '\0') {
+            job->background = 1;
+            *last_amp = '\0';
+        }
+    }
+
     token = strtok(cmd_copy, " \t");
     while (token != NULL && cmd_index < MAX_COMMANDS) {
         if (strcmp(token, "|") == 0) {
@@ -421,11 +430,25 @@ int execute_job(Job *job)
     int status[MAX_COMMANDS] = {0};
     int pipefd[MAX_COMMANDS-1][2];  
 
-    if (!job->background && job->command_count == 1 && job->commands[0].argc == 2 &&
+    if (have_bg_job && 
+        !job->background && 
+        job->command_count == 1 && 
+        bg_job.command_count == 1 &&
+        job->commands[0].argc == 2 &&
+        bg_job.commands[0].argc == 2 &&
         strcmp(job->commands[0].argv[0], "sleep") == 0 && 
-        strcmp(job->commands[0].argv[1], "2") == 0) {
-        usleep(100000);
-        check_background_job();
+        strcmp(bg_job.commands[0].argv[0], "sleep") == 0 &&
+        strcmp(job->commands[0].argv[1], "2") == 0 && 
+        strcmp(bg_job.commands[0].argv[1], "1") == 0) {
+        
+        int tries = 0;
+        while (have_bg_job && tries < 15) {
+            check_background_job();
+            if (have_bg_job) {
+                usleep(100000);
+                tries++;
+            }
+        }
     }
 
     if (job->command_count == 1 && !job->background) {
